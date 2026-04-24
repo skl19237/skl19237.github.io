@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo List App</title>
+  <style>
+    :root {
+      --bg: #f4ead9;
+      --card: #fff8ed;
+      --text: #3f3526;
+      --muted: #8f7a5d;
+      --accent: #b8864a;
+      --danger: #c96b5c;
+      --border: #e4d5bf;
+      --shadow: 0 16px 34px rgba(120, 92, 58, 0.2);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at top, #fff6e8 0%, var(--bg) 48%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: min(720px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: clamp(1.5rem, 2.5vw, 2rem);
+      letter-spacing: 0.02em;
+    }
+
+    .top-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 14px;
+      background: #fff3e1;
+      border: 1px solid var(--border);
+    }
+
+    .progress-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .progress-title {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .progress-detail {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #6e5a3f;
+    }
+
+    .progress-ring {
+      --progress: 0;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--accent) calc(var(--progress) * 1%), #e7d7bd 0);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .progress-ring::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      background: #fff8ed;
+      border: 1px solid #e4d5bf;
+    }
+
+    .progress-percent {
+      position: relative;
+      z-index: 1;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #6b4f2d;
+    }
+
+    .search-row {
+      margin-top: 12px;
+    }
+
+    .search-input {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #fffdf7;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 130px 120px 150px auto;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #fffdf7;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .add-btn {
+      background: var(--accent);
+      color: #fffdf7;
+      padding: 12px 18px;
+      white-space: nowrap;
+    }
+
+    .add-btn:hover {
+      opacity: 0.9;
+    }
+
+    .category-select,
+    .priority-select,
+    .deadline-input {
+      border: 1px solid var(--border);
+      background: #fffdf7;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .category-select:focus,
+    .priority-select:focus,
+    .deadline-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+    }
+
+    .deadline-input {
+      font-family: inherit;
+    }
+
+    .filters {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      background: #ead7bd;
+      color: #5d472c;
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+    }
+
+    .filter-btn.active {
+      background: var(--accent);
+      color: #fffdf7;
+    }
+
+    .sorts {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .sort-btn {
+      background: #ead7bd;
+      color: #5d472c;
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+    }
+
+    .sort-btn.active {
+      background: #b8864a;
+      color: #fffdf7;
+    }
+
+    .meta {
+      margin-top: 14px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.95rem;
+    }
+
+    .clear-done-btn {
+      background: #ead7bd;
+      color: #5d472c;
+      padding: 8px 12px;
+    }
+
+    .clear-done-btn:hover {
+      background: #dfc8a9;
+    }
+
+    .list-wrap {
+      margin-top: 18px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #fffdf7;
+    }
+
+    .todo-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .todo-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      animation: slideIn 0.25s ease;
+      cursor: grab;
+    }
+
+    .todo-item:last-child {
+      border-bottom: 0;
+    }
+
+    .todo-item.removing {
+      animation: slideOut 0.22s ease forwards;
+    }
+
+    .todo-item.overdue {
+      background: rgba(255, 93, 115, 0.16);
+    }
+
+    .todo-item.due-today {
+      background: rgba(245, 158, 11, 0.18);
+    }
+
+    .todo-item.dragging {
+      opacity: 0.45;
+      cursor: grabbing;
+    }
+
+    .todo-item.drag-over {
+      outline: 2px dashed rgba(108, 99, 255, 0.9);
+      outline-offset: -4px;
+    }
+
+    .todo-text {
+      word-break: break-word;
+      line-height: 1.45;
+      transition: opacity 0.2s ease, text-decoration-color 0.2s ease;
+    }
+
+    .todo-main {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .category-chip {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      font-size: 0.78rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .priority-chip {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      font-size: 0.78rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .deadline-text {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .category-work {
+      background: #3b82f6;
+    }
+
+    .category-personal {
+      background: #22c55e;
+    }
+
+    .category-shopping {
+      background: #f59e0b;
+    }
+
+    .priority-high {
+      background: #ef4444;
+    }
+
+    .priority-medium {
+      background: #eab308;
+      color: #1f2937;
+    }
+
+    .priority-low {
+      background: #6b7280;
+    }
+
+    .todo-item.done .todo-text {
+      text-decoration: line-through;
+      opacity: 0.5;
+    }
+
+    .delete-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: rgba(201, 107, 92, 0.16);
+      color: #9b4c3f;
+      font-weight: 700;
+      display: inline-grid;
+      place-items: center;
+      padding: 0;
+    }
+
+    .delete-btn:hover {
+      background: rgba(201, 107, 92, 0.28);
+    }
+
+    .empty {
+      margin: 0;
+      padding: 16px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideOut {
+      to {
+        opacity: 0;
+        transform: translateX(18px);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        padding: 18px;
+      }
+
+      .input-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .add-btn {
+        width: 100%;
+        grid-column: 1 / -1;
+      }
+
+      .meta {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .clear-done-btn {
+        width: 100%;
+      }
+
+      .top-summary {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Todo List</h1>
+    <section class="top-summary">
+      <div class="progress-copy">
+        <p class="progress-title">이번 주 완료율</p>
+        <p id="weeklyProgressDetail" class="progress-detail">0/0 완료</p>
+      </div>
+      <div id="weeklyProgressRing" class="progress-ring" style="--progress: 0">
+        <span id="weeklyProgressPercent" class="progress-percent">0%</span>
+      </div>
+    </section>
+
+    <div class="input-row">
+      <input id="todoInput" type="text" placeholder="할 일을 입력하세요..." maxlength="200" />
+      <select id="categorySelect" class="category-select" aria-label="카테고리 선택">
+        <option value="업무">업무</option>
+        <option value="개인">개인</option>
+        <option value="쇼핑">쇼핑</option>
+      </select>
+      <select id="prioritySelect" class="priority-select" aria-label="우선순위 선택">
+        <option value="높음">높음</option>
+        <option value="보통" selected>보통</option>
+        <option value="낮음">낮음</option>
+      </select>
+      <input id="deadlineInput" class="deadline-input" type="date" aria-label="마감일 선택" />
+      <button id="addBtn" class="add-btn" type="button">추가</button>
+    </div>
+    <div class="search-row">
+      <input id="searchInput" class="search-input" type="text" placeholder="할 일 검색..." aria-label="할 일 검색" />
+    </div>
+
+    <div class="filters" id="filters">
+      <button class="filter-btn active" type="button" data-filter="전체">전체</button>
+      <button class="filter-btn" type="button" data-filter="업무">업무</button>
+      <button class="filter-btn" type="button" data-filter="개인">개인</button>
+      <button class="filter-btn" type="button" data-filter="쇼핑">쇼핑</button>
+    </div>
+    <div class="sorts" id="sorts">
+      <button class="sort-btn" type="button" data-sort="priority">우선순위순</button>
+      <button class="sort-btn" type="button" data-sort="deadline">마감일순</button>
+      <button class="sort-btn active" type="button" data-sort="latest">최신순</button>
+    </div>
+
+    <div class="meta">
+      <span id="stats">전체 0개 / 완료 0개</span>
+      <button id="clearDoneBtn" class="clear-done-btn" type="button">완료된 항목 삭제</button>
+    </div>
+
+    <section class="list-wrap">
+      <ul id="todoList" class="todo-list" aria-live="polite"></ul>
+      <p id="emptyState" class="empty">아직 할 일이 없습니다.</p>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "todos";
+    const CATEGORY_CLASS = {
+      업무: "category-work",
+      개인: "category-personal",
+      쇼핑: "category-shopping"
+    };
+    const PRIORITY_CLASS = {
+      높음: "priority-high",
+      보통: "priority-medium",
+      낮음: "priority-low"
+    };
+    const PRIORITY_WEIGHT = {
+      높음: 3,
+      보통: 2,
+      낮음: 1
+    };
+
+    const todoInput = document.getElementById("todoInput");
+    const searchInput = document.getElementById("searchInput");
+    const categorySelect = document.getElementById("categorySelect");
+    const prioritySelect = document.getElementById("prioritySelect");
+    const deadlineInput = document.getElementById("deadlineInput");
+    const filters = document.getElementById("filters");
+    const sorts = document.getElementById("sorts");
+    const addBtn = document.getElementById("addBtn");
+    const clearDoneBtn = document.getElementById("clearDoneBtn");
+    const todoList = document.getElementById("todoList");
+    const stats = document.getElementById("stats");
+    const emptyState = document.getElementById("emptyState");
+    const weeklyProgressRing = document.getElementById("weeklyProgressRing");
+    const weeklyProgressPercent = document.getElementById("weeklyProgressPercent");
+    const weeklyProgressDetail = document.getElementById("weeklyProgressDetail");
+
+    let todos = loadTodos();
+    let currentFilter = "전체";
+    let currentSort = "latest";
+    let currentSearchQuery = "";
+    let draggedTodoId = null;
+
+    function loadTodos() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.map((todo) => ({
+          ...todo,
+          category: ["업무", "개인", "쇼핑"].includes(todo.category) ? todo.category : "개인",
+          priority: ["높음", "보통", "낮음"].includes(todo.priority) ? todo.priority : "보통",
+          dueDate: typeof todo.dueDate === "string" ? todo.dueDate : ""
+        }));
+      } catch (error) {
+        console.error("Failed to load todos:", error);
+        return [];
+      }
+    }
+
+    function saveTodos() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    }
+
+    function createTodo(text, category, priority, dueDate) {
+      return {
+        id: crypto.randomUUID(),
+        text,
+        category,
+        priority,
+        dueDate,
+        done: false,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    function addTodo() {
+      const text = todoInput.value.trim();
+      if (!text) {
+        todoInput.focus();
+        return;
+      }
+      const category = categorySelect.value;
+      const priority = prioritySelect.value;
+      const dueDate = deadlineInput.value;
+      todos.unshift(createTodo(text, category, priority, dueDate));
+      todoInput.value = "";
+      deadlineInput.value = "";
+      saveTodos();
+      render();
+      todoInput.focus();
+    }
+
+    function toggleTodo(id) {
+      todos = todos.map((todo) =>
+        todo.id === id ? { ...todo, done: !todo.done } : todo
+      );
+      saveTodos();
+      render();
+    }
+
+    function removeTodo(id, listItem) {
+      if (listItem) {
+        listItem.classList.add("removing");
+        setTimeout(() => {
+          todos = todos.filter((todo) => todo.id !== id);
+          saveTodos();
+          render();
+        }, 220);
+        return;
+      }
+      todos = todos.filter((todo) => todo.id !== id);
+      saveTodos();
+      render();
+    }
+
+    function clearCompleted() {
+      const doneCount = todos.filter((todo) => todo.done).length;
+      if (!doneCount) return;
+
+      const doneIds = new Set(todos.filter((todo) => todo.done).map((todo) => todo.id));
+      document.querySelectorAll(".todo-item.done").forEach((item) => {
+        item.classList.add("removing");
+      });
+
+      setTimeout(() => {
+        todos = todos.filter((todo) => !doneIds.has(todo.id));
+        saveTodos();
+        render();
+      }, 220);
+    }
+
+    function getDateStatus(dueDate) {
+      if (!dueDate) return "";
+      const today = new Date();
+      const todayString = [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0")
+      ].join("-");
+      if (dueDate < todayString) return "overdue";
+      if (dueDate === todayString) return "due-today";
+      return "";
+    }
+
+    function moveTodo(draggedId, targetId) {
+      if (currentSort !== "latest") return;
+      if (!draggedId || !targetId || draggedId === targetId) return;
+      const draggedIndex = todos.findIndex((todo) => todo.id === draggedId);
+      const targetIndex = todos.findIndex((todo) => todo.id === targetId);
+      if (draggedIndex < 0 || targetIndex < 0) return;
+
+      const [movedTodo] = todos.splice(draggedIndex, 1);
+      todos.splice(targetIndex, 0, movedTodo);
+      saveTodos();
+      render();
+    }
+
+    function sortTodos(items) {
+      const copied = [...items];
+      return copied.sort((a, b) => {
+        if (a.done !== b.done) return Number(a.done) - Number(b.done);
+
+        if (currentSort === "priority") {
+          const priorityDiff = PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority];
+          if (priorityDiff !== 0) return priorityDiff;
+        } else if (currentSort === "deadline") {
+          if (!a.dueDate && !b.dueDate) {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          }
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+        }
+
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+    }
+
+    function getWeeklyStats() {
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      const day = startOfWeek.getDay();
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+      const weeklyTodos = todos.filter((todo) => {
+        const created = new Date(todo.createdAt);
+        return created >= startOfWeek && created < endOfWeek;
+      });
+      const completed = weeklyTodos.filter((todo) => todo.done).length;
+      const total = weeklyTodos.length;
+      const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+      return { completed, total, percent };
+    }
+
+    function render() {
+      todoList.innerHTML = "";
+      const categoryFilteredTodos = currentFilter === "전체"
+        ? todos
+        : todos.filter((todo) => todo.category === currentFilter);
+      const searchedTodos = categoryFilteredTodos.filter((todo) =>
+        todo.text.toLowerCase().includes(currentSearchQuery)
+      );
+      const filteredTodos = sortTodos(searchedTodos);
+
+      filteredTodos.forEach((todo) => {
+        const li = document.createElement("li");
+        const dateStatus = getDateStatus(todo.dueDate);
+        li.className = "todo-item"
+          + (todo.done ? " done" : "")
+          + (dateStatus ? ` ${dateStatus}` : "");
+        li.dataset.id = todo.id;
+        li.draggable = currentSort === "latest";
+
+        li.addEventListener("dragstart", (event) => {
+          draggedTodoId = todo.id;
+          li.classList.add("dragging");
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", todo.id);
+        });
+
+        li.addEventListener("dragend", () => {
+          draggedTodoId = null;
+          li.classList.remove("dragging");
+          todoList.querySelectorAll(".todo-item.drag-over").forEach((item) => {
+            item.classList.remove("drag-over");
+          });
+        });
+
+        li.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          if (draggedTodoId && draggedTodoId !== todo.id) {
+            li.classList.add("drag-over");
+          }
+        });
+
+        li.addEventListener("dragleave", () => {
+          li.classList.remove("drag-over");
+        });
+
+        li.addEventListener("drop", (event) => {
+          event.preventDefault();
+          li.classList.remove("drag-over");
+          const droppedId = event.dataTransfer.getData("text/plain") || draggedTodoId;
+          moveTodo(droppedId, todo.id);
+        });
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = todo.done;
+        checkbox.setAttribute("aria-label", "완료 상태 토글");
+        checkbox.addEventListener("change", () => toggleTodo(todo.id));
+
+        const text = document.createElement("span");
+        text.className = "todo-text";
+        text.textContent = todo.text;
+
+        const chip = document.createElement("span");
+        chip.className = "category-chip " + CATEGORY_CLASS[todo.category];
+        chip.textContent = todo.category;
+
+        const priorityChip = document.createElement("span");
+        priorityChip.className = "priority-chip " + PRIORITY_CLASS[todo.priority];
+        priorityChip.textContent = `우선순위: ${todo.priority}`;
+
+        const main = document.createElement("div");
+        main.className = "todo-main";
+        main.append(text, chip, priorityChip);
+
+        if (todo.dueDate) {
+          const deadlineText = document.createElement("span");
+          deadlineText.className = "deadline-text";
+          deadlineText.textContent = `마감일: ${todo.dueDate}`;
+          main.appendChild(deadlineText);
+        }
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "delete-btn";
+        delBtn.type = "button";
+        delBtn.textContent = "X";
+        delBtn.setAttribute("aria-label", "할 일 삭제");
+        delBtn.addEventListener("click", () => removeTodo(todo.id, li));
+
+        li.append(checkbox, main, delBtn);
+        todoList.appendChild(li);
+      });
+
+      const total = todos.length;
+      const done = todos.filter((todo) => todo.done).length;
+      stats.textContent = `전체 ${total}개 / 완료 ${done}개`;
+      emptyState.style.display = filteredTodos.length === 0 ? "block" : "none";
+      emptyState.textContent = total === 0
+        ? "아직 할 일이 없습니다."
+        : "현재 필터/검색에 해당하는 항목이 없습니다.";
+      clearDoneBtn.disabled = done === 0;
+      clearDoneBtn.style.opacity = done === 0 ? "0.55" : "1";
+      clearDoneBtn.style.cursor = done === 0 ? "not-allowed" : "pointer";
+
+      const weeklyStats = getWeeklyStats();
+      weeklyProgressRing.style.setProperty("--progress", String(weeklyStats.percent));
+      weeklyProgressPercent.textContent = `${weeklyStats.percent}%`;
+      weeklyProgressDetail.textContent = `${weeklyStats.completed}/${weeklyStats.total} 완료`;
+
+      filters.querySelectorAll(".filter-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.filter === currentFilter);
+      });
+      sorts.querySelectorAll(".sort-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.sort === currentSort);
+      });
+    }
+
+    addBtn.addEventListener("click", addTodo);
+    todoInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") addTodo();
+    });
+    filters.addEventListener("click", (event) => {
+      const target = event.target.closest(".filter-btn");
+      if (!target) return;
+      currentFilter = target.dataset.filter;
+      render();
+    });
+    sorts.addEventListener("click", (event) => {
+      const target = event.target.closest(".sort-btn");
+      if (!target) return;
+      currentSort = target.dataset.sort;
+      render();
+    });
+    searchInput.addEventListener("input", () => {
+      currentSearchQuery = searchInput.value.trim().toLowerCase();
+      render();
+    });
+    clearDoneBtn.addEventListener("click", clearCompleted);
+
+    render();
+  </script>
+</body>
+</html>
